@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Data Engineering Daily Tracker</title>
+  <style>
+    :root { --bg:#0b0f19; --card:#121a2a; --muted:#8ea0c2; --text:#e8eeff; --line:#20304e; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 20% 0%, #182544 0%, var(--bg) 55%);
+      color: var(--text);
+    }
+    header {
+      position: sticky; top: 0; z-index: 10;
+      background: rgba(11,15,25,.75); backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+    .wrap { max-width: 1050px; margin: 0 auto; padding: 18px 16px; }
+    h1 { margin: 0 0 8px; font-size: 20px; letter-spacing: .2px; }
+    .sub { color: var(--muted); font-size: 13px; line-height: 1.4; }
+
+    .grid { display: grid; gap: 12px; grid-template-columns: 1fr; }
+    @media (min-width: 900px) { .grid { grid-template-columns: 420px 1fr; } }
+
+    .card {
+      background: rgba(18,26,42,.92);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 8px 20px rgba(0,0,0,.25);
+    }
+
+    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .row > * { flex: none; }
+
+    label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; }
+    input[type="date"], input[type="text"], select, button, textarea {
+      border-radius: 12px; border: 1px solid var(--line);
+      background: #0e1626; color: var(--text);
+      padding: 10px 12px;
+      outline: none;
+    }
+    input[type="date"] { padding: 9px 12px; }
+    button {
+      cursor: pointer; font-weight: 600;
+      background: linear-gradient(180deg, #2a5cff, #2146c9);
+      border: 0;
+    }
+    button.secondary { background: #0e1626; border: 1px solid var(--line); color: var(--text); }
+    button.danger { background: linear-gradient(180deg, #ff4d6d, #c92a43); }
+
+    .stats { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; margin-top: 10px; }
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: rgba(14,22,38,.75);
+    }
+    .stat .k { font-size: 12px; color: var(--muted); }
+    .stat .v { font-size: 18px; font-weight: 800; margin-top: 2px; }
+
+    .progress {
+      height: 10px; background: #0e1626; border: 1px solid var(--line);
+      border-radius: 999px; overflow: hidden; margin-top: 10px;
+    }
+    .bar { height: 100%; width: 0%; background: linear-gradient(90deg, #2a5cff, #7a5cff); }
+
+    .listTop { display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+    .search { width: 260px; max-width: 100%; }
+    .list {
+      margin-top: 12px; border-top: 1px solid var(--line);
+      max-height: calc(100vh - 240px); overflow: auto;
+      padding-top: 10px;
+    }
+    .day {
+      padding: 10px; border: 1px solid var(--line);
+      border-radius: 14px; background: rgba(14,22,38,.55);
+      margin-bottom: 10px;
+      display: grid;
+      grid-template-columns: 30px 1fr;
+      gap: 10px;
+    }
+    .day.done { border-color: rgba(42,92,255,.5); background: rgba(42,92,255,.10); }
+    .day .dateLine { display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; }
+    .day .date { font-weight: 800; }
+    .day .meta { color: var(--muted); font-size: 12px; }
+    textarea {
+      width: 100%;
+      min-height: 90px;
+      resize: vertical;
+      margin-top: 8px;
+      line-height: 1.4;
+    }
+    .tiny { font-size: 12px; color: var(--muted); }
+    .pill {
+      font-size: 11px; padding: 3px 8px; border-radius: 999px;
+      border: 1px solid var(--line); color: var(--muted);
+      background: rgba(14,22,38,.6);
+    }
+    .todayTag { border-color: rgba(255,215,0,.5); color: #ffd766; }
+    .btnRow { display:flex; gap:10px; flex-wrap:wrap; margin-top: 10px; }
+    a { color: #9db6ff; }
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Data Engineering Daily Tracker</h1>
+    <div class="sub">
+      Check off each day + write what you learned. Saved locally in your browser.
+    </div>
+  </div>
+</header>
+
+<main class="wrap grid">
+  <section class="card">
+    <div class="row" style="justify-content:space-between;">
+      <div style="min-width:260px;">
+        <label for="goalDate">Goal end date</label>
+        <input id="goalDate" type="date" />
+      </div>
+      <div style="min-width:260px;">
+        <label for="name">Your title (optional)</label>
+        <input id="name" type="text" placeholder="e.g., Sheetal — DE 6-month plan" />
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="k">Days completed</div>
+        <div class="v" id="doneCount">0</div>
+      </div>
+      <div class="stat">
+        <div class="k">Days remaining</div>
+        <div class="v" id="remainingCount">0</div>
+      </div>
+      <div class="stat">
+        <div class="k">Streak</div>
+        <div class="v" id="streakCount">0</div>
+      </div>
+      <div class="stat">
+        <div class="k">Progress</div>
+        <div class="v"><span id="progressPct">0</span>%</div>
+      </div>
+    </div>
+
+    <div class="progress"><div class="bar" id="bar"></div></div>
+
+    <div class="btnRow">
+      <button id="markToday">Mark today done</button>
+      <button class="secondary" id="jumpToday">Jump to today</button>
+      <button class="secondary" id="exportBtn">Export backup</button>
+      <button class="secondary" id="importBtn">Import backup</button>
+      <button class="danger" id="resetBtn">Reset all</button>
+    </div>
+
+    <div class="tiny" style="margin-top:10px;">
+      Tip: Use Export once in a while so you don’t lose notes if browser data gets cleared.
+    </div>
+    <input type="file" id="filePicker" accept="application/json" style="display:none;" />
+  </section>
+
+  <section class="card">
+    <div class="listTop">
+      <div>
+        <div style="font-weight:800; font-size:14px;" id="titleLine">Daily log</div>
+        <div class="tiny">Write what you learned each day (SQL, ETL, Airflow, Spark, etc.).</div>
+      </div>
+      <input id="search" class="search" type="text" placeholder="Search notes (e.g. airflow, sql)..." />
+    </div>
+
+    <div class="list" id="list"></div>
+  </section>
+</main>
+
+<script>
+  // ----- Helpers -----
+  const pad = (n) => String(n).padStart(2,'0');
+  const toKey = (d) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const fromKey = (k) => {
+    const [y,m,dd] = k.split('-').map(Number);
+    return new Date(y, m-1, dd);
+  };
+  const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const daysBetween = (a,b) => Math.round((startOfDay(b) - startOfDay(a)) / (1000*60*60*24));
+  const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+  const dow = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const fmt = (d) => `${dow[d.getDay()]}, ${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+
+  // ----- Storage -----
+  const STORAGE_KEY = "de_daily_tracker_v1";
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch { return null; }
+  }
+  function saveState(state) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  // ----- Default state -----
+  const today = startOfDay(new Date());
+  const defaultGoal = new Date(2026, 7, 31); // Aug 31, 2026 (month is 0-based)
+
+  let state = loadState() || {
+    goalDate: toKey(defaultGoal),
+    name: "",
+    days: {} // { "YYYY-MM-DD": { done: boolean, note: string, updatedAt: ISO } }
+  };
+
+  // ----- Elements -----
+  const goalDateEl = document.getElementById("goalDate");
+  const nameEl = document.getElementById("name");
+  const titleLine = document.getElementById("titleLine");
+  const listEl = document.getElementById("list");
+  const searchEl = document.getElementById("search");
+
+  const doneCountEl = document.getElementById("doneCount");
+  const remainingCountEl = document.getElementById("remainingCount");
+  const streakCountEl = document.getElementById("streakCount");
+  const progressPctEl = document.getElementById("progressPct");
+  const barEl = document.getElementById("bar");
+
+  const markTodayBtn = document.getElementById("markToday");
+  const jumpTodayBtn = document.getElementById("jumpToday");
+  const exportBtn = document.getElementById("exportBtn");
+  const importBtn = document.getElementById("importBtn");
+  const resetBtn = document.getElementById("resetBtn");
+  const filePicker = document.getElementById("filePicker");
+
+  // ----- Core logic -----
+  function getGoalDate() {
+    const gd = fromKey(state.goalDate);
+    return startOfDay(gd);
+  }
+
+  function ensureRangeDays() {
+    const goal = getGoalDate();
+    const total = Math.max(0, daysBetween(today, goal));
+    for (let i = 0; i <= total; i++) {
+      const d = addDays(today, i);
+      const k = toKey(d);
+      if (!state.days[k]) state.days[k] = { done: false, note: "", updatedAt: null };
+    }
+    // Optional: if user moves goal earlier, keep existing notes (don’t delete)
+  }
+
+  function calcStats() {
+    const goal = getGoalDate();
+    const totalDays = Math.max(0, daysBetween(today, goal)) + 1; // include today
+    let done = 0;
+
+    // Only count within [today..goal]
+    for (let i = 0; i < totalDays; i++) {
+      const k = toKey(addDays(today, i));
+      if (state.days[k]?.done) done++;
+    }
+
+    const remaining = totalDays - done;
+    const pct = totalDays === 0 ? 0 : Math.round((done / totalDays) * 100);
+
+    // streak: consecutive done up to today going backwards
+    let streak = 0;
+    for (let i = 0; ; i++) {
+      const k = toKey(addDays(today, -i));
+      const entry = state.days[k];
+      if (entry && entry.done) streak++;
+      else break;
+    }
+
+    return { done, remaining, pct, totalDays, streak };
+  }
+
+  function renderHeader() {
+    goalDateEl.value = state.goalDate;
+    nameEl.value = state.name || "";
+    titleLine.textContent = state.name?.trim() ? state.name.trim() : "Daily log";
+  }
+
+  function renderStats() {
+    const { done, remaining, pct, streak } = calcStats();
+    doneCountEl.textContent = String(done);
+    remainingCountEl.textContent = String(remaining);
+    streakCountEl.textContent = String(streak);
+    progressPctEl.textContent = String(pct);
+    barEl.style.width = pct + "%";
+  }
+
+  function renderList() {
+    const goal = getGoalDate();
+    const total = Math.max(0, daysBetween(today, goal)) + 1;
+
+    const q = (searchEl.value || "").trim().toLowerCase();
+
+    listEl.innerHTML = "";
+
+    for (let i = 0; i < total; i++) {
+      const d = addDays(today, i);
+      const k = toKey(d);
+      const entry = state.days[k] || { done: false, note: "" };
+
+      // search filter
+      if (q) {
+        const hay = (entry.note || "").toLowerCase();
+        if (!hay.includes(q) && !k.includes(q)) continue;
+      }
+
+      const dayDiv = document.createElement("div");
+      dayDiv.className = "day" + (entry.done ? " done" : "");
+      dayDiv.id = "day-" + k;
+
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = !!entry.done;
+      cb.title = "Mark done";
+      cb.addEventListener("change", () => {
+        state.days[k].done = cb.checked;
+        state.days[k].updatedAt = new Date().toISOString();
+        saveState(state);
+        renderStats();
+        renderList();
+      });
+
+      const content = document.createElement("div");
+
+      const top = document.createElement("div");
+      top.className = "dateLine";
+
+      const dateSpan = document.createElement("div");
+      dateSpan.className = "date";
+      dateSpan.textContent = fmt(d);
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+
+      const isToday = (k === toKey(today));
+      const idx = i + 1;
+      meta.innerHTML = `
+        <span class="pill ${isToday ? "todayTag" : ""}">${isToday ? "Today" : "Day " + idx}</span>
+        <span class="pill">Ends: ${state.goalDate}</span>
+      `;
+
+      top.appendChild(dateSpan);
+      top.appendChild(meta);
+
+      const ta = document.createElement("textarea");
+      ta.placeholder = "What did you learn today? (ex: SQL joins, Airflow DAG, Spark transformations...)";
+      ta.value = entry.note || "";
+      ta.addEventListener("input", () => {
+        state.days[k].note = ta.value;
+        state.days[k].updatedAt = new Date().toISOString();
+        saveState(state);
+      });
+
+      content.appendChild(top);
+      content.appendChild(ta);
+
+      dayDiv.appendChild(cb);
+      dayDiv.appendChild(content);
+      listEl.appendChild(dayDiv);
+    }
+
+    if (!listEl.children.length) {
+      const empty = document.createElement("div");
+      empty.className = "tiny";
+      empty.textContent = "No results for your search.";
+      listEl.appendChild(empty);
+    }
+  }
+
+  function jumpToToday() {
+    const k = toKey(today);
+    const el = document.getElementById("day-" + k);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  // ----- Events -----
+  goalDateEl.addEventListener("change", () => {
+    if (!goalDateEl.value) return;
+    state.goalDate = goalDateEl.value;
+    ensureRangeDays();
+    saveState(state);
+    renderStats();
+    renderList();
+  });
+
+  nameEl.addEventListener("input", () => {
+    state.name = nameEl.value;
+    saveState(state);
+    renderHeader();
+  });
+
+  searchEl.addEventListener("input", () => renderList());
+
+  markTodayBtn.addEventListener("click", () => {
+    const k = toKey(today);
+    ensureRangeDays();
+    state.days[k].done = true;
+    state.days[k].updatedAt = new Date().toISOString();
+    saveState(state);
+    renderStats();
+    renderList();
+    jumpToToday();
+  });
+
+  jumpTodayBtn.addEventListener("click", jumpToToday);
+
+  exportBtn.addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "de-tracker-backup.json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  importBtn.addEventListener("click", () => filePicker.click());
+
+  filePicker.addEventListener("change", async () => {
+    const file = filePicker.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const imported = JSON.parse(text);
+      if (!imported || typeof imported !== "object" || !imported.days) {
+        alert("Invalid backup file.");
+        return;
+      }
+      state = imported;
+      ensureRangeDays();
+      saveState(state);
+      renderHeader();
+      renderStats();
+      renderList();
+      alert("Backup imported!");
+    } catch (e) {
+      alert("Could not import backup: " + e.message);
+    } finally {
+      filePicker.value = "";
+    }
+  });
+
+  resetBtn.addEventListener("click", () => {
+    const ok = confirm("Reset everything? This will delete all checkmarks and notes.");
+    if (!ok) return;
+    localStorage.removeItem(STORAGE_KEY);
+    state = {
+      goalDate: toKey(defaultGoal),
+      name: "",
+      days: {}
+    };
+    ensureRangeDays();
+    saveState(state);
+    renderHeader();
+    renderStats();
+    renderList();
+  });
+
+  // ----- Init -----
+  ensureRangeDays();
+  saveState(state);
+  renderHeader();
+  renderStats();
+  renderList();
+  jumpToToday();
+</script>
+</body>
+</html>
